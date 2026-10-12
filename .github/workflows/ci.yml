@@ -30,7 +30,7 @@ jobs:
         run: python scripts/check_mermaid.py
       - name: Verify no secret-bearing files are tracked
         run: |
-          if git ls-files | grep -E '(^|/)(\.env($|\.)|\.persist_conf\.json$|.*credentials.*\.(json|enc)$|.*\.(pdf|xml|eml)$|node_modules/)'; then
+          if git ls-files | grep -E '(^|/)(\.env($|\.)|\.persist_conf\.json$|.*credentials.*\.(json|enc)$|.*\.(pdf|xml|eml)$|node_modules/)' | grep -v '^\.env\.example$'; then
             echo 'Sensitive or generated files are tracked' >&2
             exit 1
           fi
