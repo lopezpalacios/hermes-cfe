@@ -31,8 +31,9 @@ tests. Each item is independently covered by tests in `tests/test_policy.py`,
 | E08 canonical read-back | successful read-back must match UUID/RPU/period; missing/mismatch/error never marks harvested |
 | E09 state transitions | order is fetch → PDF/RPU → credential → CFE XML → validate → ingest → read-back; early failures do not invoke later stages |
 | E10 offline repo safety | full unit suite, Mermaid check, compilation, secret-free CI, and diff hygiene |
+| E11 durable queue behavior | atomic claim, unique lease, stale-owner rejection, idempotent object identity, retry budget, exception terminal state, and restart persistence |
 
-Current report: **E01–E10 are covered offline with synthetic fixtures; E10 repo checks pass locally and on CI for commit `6eee203`.** This does NOT make the live acceptance suite pass: real-schema verification, golden-CFDI confirmation, durable queue/lease behavior, integration, recovery, and authorized staging are all **BLOCKED**, not passing or skipped silently.
+Current report: **E01–E10 are covered offline with synthetic fixtures; E11 is implemented and locally covered, but has not yet been CI-verified.** This does NOT make the live acceptance suite pass: real-schema verification, golden-CFDI confirmation, production storage adapter, lease renewal, crash/recovery around external side effects, integration, and authorized staging are all **BLOCKED**, not passing or skipped silently.
 
 These checks prove local policy/data-contract behavior only. They do not assert live
 Supabase, WhatsApp, phone, CFE, Browser Use, or deployment behavior. Live tests
