@@ -35,23 +35,25 @@ def parse_cfdi_identity(xml_bytes: bytes, requested_rpu: str) -> dict[str, str]:
     if not UUID_RE.fullmatch(uuid):
         raise ValueError("CFDI UUID malformed")
 
-    candidates: set[tuple[str, str]] = set()
+    candidates: list[tuple[str, str]] = []
     for node in root.iter():
-        for key, value in node.attrib.items():
-            if key.casefold() in {"rpu", "numerorservicio", "no_rpu"} and RPU_RE.fullmatch(value.strip()):
-                rpu = value.strip()
-                period = None
-                for pkey, pvalue in node.attrib.items():
-                    if pkey.casefold() in {"periodo", "anio_mes", "period"}:
-                        match = re.fullmatch(r"(\d{4})[-/]?(\d{2})", pvalue.strip())
-                        if match:
-                            period = match.group(1) + match.group(2)
-                            break
-                if period:
-                    candidates.add((rpu, period))
+        rpu_values = [value.strip() for key, value in node.attrib.items()
+                      if key.casefold() in {"rpu", "numerorservicio", "no_rpu"}
+                      and RPU_RE.fullmatch(value.strip())]
+        period_values = []
+        for pkey, pvalue in node.attrib.items():
+            if pkey.casefold() in {"periodo", "anio_mes", "period"}:
+                match = re.fullmatch(r"(\d{4})[-/]?(\d{2})", pvalue.strip())
+                if match:
+                    period_values.append(match.group(1) + match.group(2))
+        # Keep element boundaries: duplicate identical entries are still ambiguous.
+        if rpu_values or period_values:
+            if len(rpu_values) != 1 or len(period_values) != 1:
+                raise ValueError("CFDI addenda identity element must contain exactly one RPU and period")
+            candidates.append((rpu_values[0], period_values[0]))
     if len(candidates) != 1:
         raise ValueError("CFDI addenda must contain exactly one unambiguous RPU/period pair")
-    rpu, period = next(iter(candidates))
+    rpu, period = candidates[0]
     if rpu != requested_rpu:
         raise ValueError("CFDI RPU does not match requested RPU")
     year, month = int(period[:4]), int(period[4:])

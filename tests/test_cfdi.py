@@ -39,6 +39,16 @@ class CfdiIdentityTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "ambiguous"):
             parse_cfdi_identity(xml, "000000000001")
 
+    def test_rejects_duplicate_identical_rpu_period_elements(self):
+        xml = VALID_XML.replace(b"</cfdi:Addenda>", b'<cfe:RPU xmlns:cfe="urn:demo:cfe" RPU="000000000001" Periodo="2026-09"/></cfdi:Addenda>')
+        with self.assertRaisesRegex(ValueError, "exactly one"):
+            parse_cfdi_identity(xml, "000000000001")
+
+    def test_rejects_multiple_rpu_attribute_names_on_same_element(self):
+        xml = VALID_XML.replace(b' RPU="000000000001"', b' RPU="000000000001" No_RPU="000000000001"')
+        with self.assertRaisesRegex(ValueError, "exactly one"):
+            parse_cfdi_identity(xml, "000000000001")
+
     def test_rejects_missing_period_instead_of_substituting_current_month(self):
         xml = VALID_XML.replace(b' Periodo="2026-09"', b"")
         with self.assertRaisesRegex(ValueError, "period"):
