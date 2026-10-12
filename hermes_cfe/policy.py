@@ -98,6 +98,9 @@ def can_mark_harvested(
         return False
     for record in (ingest_result, readback):
         for key, value in identity.items():
-            if record.get(key) != value:
+            actual = record.get(key)
+            if key == "cfdi_uuid" and isinstance(actual, str):
+                actual = actual.upper()
+            if actual != value:
                 return False
     return True
