@@ -1,0 +1,39 @@
+flowchart LR
+  subgraph Current["CURRENT · observed but incomplete"]
+    MSG[WhatsApp PDF] --> UP[Uploader outside repo]
+    UP --> STORE[(Supabase Storage: cfe-bills)]
+    STORE --> POLL[Local S3 polling script]
+    POLL --> PDF[PDF / RPU parsing]
+    PDF --> LOOKUP[Contigo credential lookup]
+    LOOKUP -->|credential present| CONTIGO[Contigo phone + ADB]
+    LOOKUP -->|explicit absent| EXLOCAL[Local parked exception]
+    LOOKUP -->|RPC/network failure| SAFE[Stop; no automatic signup]
+    CONTIGO --> XMLMAIL[CFDI email]
+    XMLMAIL --> INGEST[Canonical ingest RPC]
+  end
+
+  subgraph Target["TARGET · not deployed; blocked on verified schema and operations"]
+    WA[Authorized WhatsApp uploader] --> PRIVATE[(Private Storage object)]
+    PRIVATE --> EVT[Storage event / outbox]
+    EVT --> DEDUPE[Idempotency by bucket + key + version]
+    DEDUPE --> Q[(Durable harvest queue)]
+    Q --> CLAIM[Atomic claim + lease]
+    CLAIM --> WORKER[Supervised Mac mini worker]
+    WORKER --> FETCH[Fetch exact object version]
+    FETCH --> VALIDPDF[Validate PDF + strict RPU + bill facts]
+    VALIDPDF --> CRED[Credential lookup with typed outcome]
+    CRED -->|matching credential| DEVICE[ADB + Contigo]
+    CRED -->|missing / already verified| BIZ[Business exception; operator recovery]
+    CRED -->|timeout / auth / 5xx| RETRY[Bounded retry + jitter]
+    DEVICE --> CFDI[Validate CFDI identity and period]
+    CFDI -->|valid| RPC[Canonical ingest RPC]
+    CFDI -->|invalid / mismatch| EX[Exception; preserve source]
+    RPC --> VERIFY[Interpret result + canonical read-back]
+    VERIFY -->|confirmed| DONE[Mark harvested]
+    VERIFY -->|uncertain / transient| RETRY
+    RETRY --> Q
+    DONE --> AUDIT[(Job state + redacted provenance)]
+    BIZ --> AUDIT
+    EX --> AUDIT
+    AUDIT --> PORTAL[Operator portal]
+  end

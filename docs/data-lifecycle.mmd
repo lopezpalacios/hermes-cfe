@@ -1,0 +1,47 @@
+flowchart TD
+  subgraph Inbound["INBOUND DOCUMENT · untrusted until validated"]
+    WA[WhatsApp PDF] --> STORAGE[(Private Storage object)]
+    STORAGE --> META[Object identity: bucket / key / version]
+    META --> FETCH[Worker fetches exact version]
+    FETCH --> PDF_CHECK[PDF integrity/type/size checks]
+    PDF_CHECK --> EXTRACT[Barcode and strict text-layer extraction]
+    EXTRACT --> RPU[Single unambiguous 12-digit RPU]
+    FETCH --> BILL_FIELDS[Invoice-side fields: name / amount / tariff / period]
+    RPU --> CROSSCHECK[Cross-check extracted fields and barcode payload]
+    BILL_FIELDS --> CROSSCHECK
+  end
+  subgraph Harvest["CFE HARVEST · provider evidence"]
+    CROSSCHECK --> ACCOUNT[Credential lookup]
+    ACCOUNT -->|available| CONTIGO[Contigo on authorized phone]
+    CONTIGO --> REQUEST[Request official XML]
+    REQUEST --> EMAIL[Fresh CFE XML attachment]
+    EMAIL --> RAW_BYTES[Raw XML bytes + source metadata]
+    CROSSCHECK -. historical backfill only .-> WEB[MiEspacio authenticated grid via Browser Use MX]
+    WEB --> REST[BU downloads REST API]
+    REST --> RAW_BYTES
+  end
+  subgraph CanonicalData["CANONICAL DATA MODEL · XML is source of truth"]
+    RAW_BYTES --> PARSE[Versioned CFDI parser]
+    PARSE --> CHECK[CFDI namespace / version / UUID / RPU / period checks]
+    CHECK -->|invalid or conflicts with requested RPU| INVALID[No ingest; exception]
+    CHECK -->|valid only| INGEST_RPC[Canonical rpc_contigo_ingest_xml]
+    INGEST_RPC --> INTAKE[(Existing intake/audit relation; discover live schema)]
+    INTAKE --> DEDUPE[Hash and RPU+period dedup decision]
+    DEDUPE --> RAW[(raw_cfe source row(s))]
+    RAW --> STAGE[(pipeline stage/parse queue; verify schema)]
+    STAGE --> PARSED[Typed parse output]
+    PARSED --> DOCUMENT[cfe.invoice_document]
+    PARSED --> INVOICE[cfe.invoice]
+    PARSED --> CHARGES[cfe.invoice_charge]
+    PARSED --> MEASUREMENTS[cfe.invoice_measurement]
+    PARSED --> HISTORY[cfe.invoice_history_month]
+    PARSED --> LEDGER[cfe.invoice_ledger_line]
+    INVOICE -. confirmed FK/projection .-> CRM[(crm.rpu / crm.bill)]
+  end
+  subgraph Provenance["PROVENANCE AND AUDIT"]
+    STORAGE -. source PDF pointer .-> AUDIT[Job/ingest audit; exact columns to verify]
+    EMAIL -. gmail message/attachment metadata .-> AUDIT
+    RAW -. UUID / hash / parser version .-> AUDIT
+    DEDUPE -. inserted vs expected duplicate .-> AUDIT
+    AUDIT --> STATUS[Worker marks harvested only after verified RPC result + read-back]
+  end

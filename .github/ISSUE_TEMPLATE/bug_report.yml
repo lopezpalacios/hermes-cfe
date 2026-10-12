@@ -1,0 +1,41 @@
+name: Bug or unsafe transition
+description: Report a reproducible defect without including customer data or secrets
+title: "[BUG] "
+labels: [bug, triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Never attach real bills, CFDI XML, RPUs, RFCs, passwords, MFA codes, signed URLs, or production logs. Use synthetic fixtures.
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: Describe one state transition and the invariant it must preserve.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include sanitized test output only.
+    validations:
+      required: true
+  - type: input
+    id: eval
+    attributes:
+      label: Failing eval/test ID
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Intake / Storage event
+        - PDF / RPU validation
+        - Queue / leases / retry
+        - Contigo / ADB
+        - CFDI / ingest
+        - Portal / UI
+        - CI / docs
+    validations:
+      required: true

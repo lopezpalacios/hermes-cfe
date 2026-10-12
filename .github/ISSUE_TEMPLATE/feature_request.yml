@@ -1,0 +1,41 @@
+name: Feature or pstack vertical slice
+description: Propose a testable architecture/harvest increment
+title: "[SLICE] "
+labels: [enhancement, triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Keep issues safe for a public repository. Do not include real invoice data, RPUs, RFCs, credentials, MFA, signed URLs or production logs. Link to a synthetic test instead.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / operator outcome
+      description: What should an operator or downstream system be able to do?
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: State observable behavior and failure behavior; include idempotency and recovery criteria where relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies / schema facts
+      description: Link verified schema contracts; list unverified assumptions explicitly.
+  - type: dropdown
+    id: lane
+    attributes:
+      label: Workstream
+      options:
+        - Intake / validation
+        - Queue / worker
+        - Contigo / CFDI ingestion
+        - Eval / CI
+        - Portal / UX
+        - Operations / deployment
+    validations:
+      required: true

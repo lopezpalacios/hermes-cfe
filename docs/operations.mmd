@@ -1,0 +1,22 @@
+stateDiagram-v2
+  [*] --> queued: Storage event accepted and deduplicated
+  queued --> running: atomic claim assigns lease
+  running --> running: heartbeat renews lease
+  running --> retry_wait: transient provider or infrastructure fault
+  retry_wait --> queued: backoff expires, attempts remain
+  running --> harvested: valid CFDI + ingest result + read-back confirmed
+  running --> business_exception: account/access requires human recovery
+  running --> failed: invalid input or retry cap reached
+  running --> queued: expired lease recovered after worker crash
+  business_exception --> queued: operator resolves cause and explicitly requeues
+  failed --> queued: operator corrects input and explicitly requeues
+  harvested --> [*]
+
+  note right of business_exception
+    Missing credential is not authorization to register an account.
+    Preserve the source object and a safe next action.
+  end note
+  note right of running
+    A single physical phone is a serialized resource.
+    Do not let concurrent jobs contend for its UI state.
+  end note
