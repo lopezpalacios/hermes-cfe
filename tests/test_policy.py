@@ -75,14 +75,43 @@ class CredentialPolicyTests(unittest.TestCase):
             with self.subTest(status=status, body=body):
                 self.assertEqual(classify_credential_result(status,body,"rpu-000000000001@newman.re"),"unavailable")
 
-    def test_only_verified_ingest_terminal_states_can_mark_harvested(self):
-        self.assertTrue(can_mark_harvested(0,{"ingestion_status":"inserted","cfdi_uuid":"demo"}))
-        self.assertTrue(can_mark_harvested(0,{"ingestion_status":"duplicate_sha","cfdi_uuid":"demo"}))
-        for code, payload in ((0,{"state":"harvested"}),
-                              (1,{"ingestion_status":"inserted","cfdi_uuid":"demo"}),
-                              (0,{"ingestion_status":"failed","cfdi_uuid":"demo"}),
-                              (0,{"ingestion_status":"inserted"})):
-            with self.subTest(code=code,payload=payload): self.assertFalse(can_mark_harvested(code,payload))
+    def test_old_unverified_ingest_result_shape_cannot_mark_harvested(self):
+        self.assertFalse(can_mark_harvested(0, "000000000001", {}, {"ingestion_status":"inserted"}, {}))
+        self.assertFalse(can_mark_harvested(1, "000000000001", {}, {"ingestion_status":"inserted"}, {}))
+        self.assertFalse(can_mark_harvested(0, "000000000001", {}, {"ingestion_status":"duplicate_sha"}, {}))
+
+    def test_cfdi_identity_requires_valid_uuid_matching_rpu_and_month(self):
+        from hermes_cfe.policy import validate_cfdi_identity
+        parsed={"cfdi_uuid":"AB12CD34-EF56-7890-ABCD-EF1234567890","rpu":"000000000001","period":"202609"}
+        self.assertEqual(validate_cfdi_identity("000000000001",parsed),parsed)
+
+    def test_cfdi_identity_rejects_missing_fields_malformed_uuid_rpu_and_period(self):
+        from hermes_cfe.policy import validate_cfdi_identity
+        parsed={"cfdi_uuid":"AB12CD34-EF56-7890-ABCD-EF1234567890","rpu":"000000000001","period":"202609"}
+        bad=[{"cfdi_uuid":None},{"cfdi_uuid":"not-a-uuid"},{"rpu":None},{"rpu":"123"},{"period":None},{"period":"202699"}]
+        for updates in bad:
+            with self.subTest(updates=updates), self.assertRaises(ValueError):
+                validate_cfdi_identity("000000000001",{**parsed,**updates})
+
+    def test_cfdi_rpu_mismatch_is_never_replaced_by_requested_rpu(self):
+        from hermes_cfe.policy import validate_cfdi_identity
+        parsed={"cfdi_uuid":"AB12CD34-EF56-7890-ABCD-EF1234567890","rpu":"000000000001","period":"202609"}
+        with self.assertRaisesRegex(ValueError,"RPU"):
+            validate_cfdi_identity("000000000002",parsed)
+
+    def test_harvest_requires_matching_rpc_and_readback(self):
+        parsed={"cfdi_uuid":"AB12CD34-EF56-7890-ABCD-EF1234567890","rpu":"000000000001","period":"202609"}
+        ingest={"ingestion_status":"inserted","cfdi_uuid":parsed["cfdi_uuid"],"rpu":parsed["rpu"],"period":parsed["period"]}
+        self.assertTrue(can_mark_harvested(0,"000000000001",parsed,ingest,dict(ingest)))
+        self.assertFalse(can_mark_harvested(0,"000000000001",parsed,ingest,None))
+        self.assertFalse(can_mark_harvested(0,"000000000001",parsed,ingest,{**ingest,"rpu":"000000000002"}))
+        self.assertFalse(can_mark_harvested(0,"000000000001",parsed,{**ingest,"cfdi_uuid":"OTHER"},dict(ingest)))
+
+    def test_duplicate_ingest_requires_same_canonical_identity(self):
+        parsed={"cfdi_uuid":"AB12CD34-EF56-7890-ABCD-EF1234567890","rpu":"000000000001","period":"202609"}
+        duplicate={"ingestion_status":"duplicate_sha","cfdi_uuid":parsed["cfdi_uuid"],"rpu":parsed["rpu"],"period":parsed["period"]}
+        self.assertTrue(can_mark_harvested(0,"000000000001",parsed,duplicate,dict(duplicate)))
+        self.assertFalse(can_mark_harvested(0,"000000000001",parsed,duplicate,{**duplicate,"cfdi_uuid":"OTHER"}))
 
 
 if __name__ == "__main__":

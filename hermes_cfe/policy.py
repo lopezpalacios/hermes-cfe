@@ -1,6 +1,7 @@
 """Pure, fail-closed harvest policies; no network or credentials required."""
 from __future__ import annotations
 
+import re
 from typing import Any
 
 
@@ -53,12 +54,50 @@ def credential_result_contract(status_code: int, payload: Any, expected_email: s
     }
 
 
-def can_mark_harvested(returncode: int, ingest_result: Any) -> bool:
-    """Require a valid CFDI identity plus an explicit canonical ingest outcome."""
-    if returncode != 0 or not isinstance(ingest_result, dict):
+_UUID = re.compile(r"^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[1-8][0-9A-Fa-f]{3}-[89ABab][0-9A-Fa-f]{3}-[0-9A-Fa-f]{12}$")
+
+
+def validate_cfdi_identity(requested_rpu: str, parsed: Any) -> dict[str, str]:
+    """Validate required CFDI identity fields without filling missing values."""
+    if not isinstance(requested_rpu, str) or not re.fullmatch(r"\d{12}", requested_rpu):
+        raise ValueError("requested RPU must be exactly 12 digits")
+    if not isinstance(parsed, dict):
+        raise ValueError("parsed CFDI must be a mapping")
+    uuid = parsed.get("cfdi_uuid")
+    rpu = parsed.get("rpu")
+    period = parsed.get("period")
+    if not isinstance(uuid, str) or not _UUID.fullmatch(uuid):
+        raise ValueError("CFDI UUID missing or malformed")
+    if not isinstance(rpu, str) or not re.fullmatch(r"\d{12}", rpu):
+        raise ValueError("CFDI RPU missing or malformed")
+    if rpu != requested_rpu:
+        raise ValueError("CFDI RPU does not match requested RPU")
+    if not isinstance(period, str) or not re.fullmatch(r"\d{6}", period):
+        raise ValueError("CFDI period missing or malformed")
+    year, month = int(period[:4]), int(period[4:])
+    if year < 2000 or month < 1 or month > 12:
+        raise ValueError("CFDI period outside accepted calendar range")
+    return {"cfdi_uuid": uuid.upper(), "rpu": rpu, "period": period}
+
+
+def can_mark_harvested(
+    returncode: int,
+    requested_rpu: str,
+    parsed: Any,
+    ingest_result: Any,
+    readback: Any,
+) -> bool:
+    """Require parsed identity, a canonical ingest outcome, and matching read-back."""
+    if returncode != 0 or not isinstance(ingest_result, dict) or not isinstance(readback, dict):
         return False
-    status = ingest_result.get("ingestion_status")
-    uuid = ingest_result.get("cfdi_uuid")
-    if not isinstance(uuid, str) or not uuid.strip():
+    try:
+        identity = validate_cfdi_identity(requested_rpu, parsed)
+    except (ValueError, TypeError):
         return False
-    return status in {"inserted", "duplicate_sha", "duplicate_period"}
+    if ingest_result.get("ingestion_status") not in {"inserted", "duplicate_sha", "duplicate_period"}:
+        return False
+    for record in (ingest_result, readback):
+        for key, value in identity.items():
+            if record.get(key) != value:
+                return False
+    return True
