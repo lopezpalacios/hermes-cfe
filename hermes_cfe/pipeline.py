@@ -30,7 +30,9 @@ def run_harvest_job(job: dict[str, Any], adapters: HarvestAdapters) -> dict[str,
         return {"state":"retryable_failure","error_class":"object_fetch_failed","detail":type(exc).__name__}
     expected_version = str(job.get("object_version", ""))
     actual_version = str(obj.get("etag", ""))
-    if expected_version and actual_version and expected_version.strip('"') != actual_version.strip('"'):
+    if expected_version and not actual_version:
+        return {"state":"retryable_failure","error_class":"object_version_unverified"}
+    if expected_version and expected_version.strip('"') != actual_version.strip('"'):
         return {"state":"retryable_failure","error_class":"object_version_changed"}
     data = obj.get("bytes")
     if not isinstance(data, bytes) or not data.startswith(b"%PDF-"):
@@ -60,6 +62,9 @@ def run_harvest_job(job: dict[str, Any], adapters: HarvestAdapters) -> dict[str,
         return {"state":"business_exception","rpu":rpu,"exception_code":"CONTIGO_ACCOUNT_VERIFIED_CREDENTIAL_MISSING"}
     if classification != "available" or not isinstance(lookup.get("credential"),dict):
         return {"state":"retryable_failure","rpu":rpu,"error_class":"credential_lookup_unavailable"}
+    account_email = lookup["credential"].get("email")
+    if account_email != f"rpu-{rpu}@newman.re":
+        return {"state":"business_exception","rpu":rpu,"error_class":"credential_account_mismatch"}
 
     try:
         xml_bytes = adapters.harvest_xml(rpu,lookup["credential"])

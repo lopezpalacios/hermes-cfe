@@ -34,6 +34,19 @@ class HarvestPipelineTests(unittest.TestCase):
         result=run_harvest_job(job,self.adapter)
         self.assertEqual(result["error_class"],"rpu_ambiguous_or_invalid")
         self.assertNotIn("credential",[x[0] for x in self.adapter.calls])
+    def test_missing_object_version_or_download_identity_fails_closed(self):
+        job={**self.job,"object_version":"immutable-v2"}
+        self.adapter.object_etag=""
+        result=run_harvest_job(job,self.adapter)
+        self.assertEqual(result["error_class"],"object_version_unverified")
+        self.assertEqual([x[0] for x in self.adapter.calls],["fetch"])
+
+    def test_wrong_account_credential_is_rejected_before_cfe_access(self):
+        self.adapter.account_email="rpu-000000000002@newman.re"
+        result=run_harvest_job(self.job,self.adapter)
+        self.assertEqual(result["error_class"],"credential_account_mismatch")
+        self.assertNotIn("harvest",[x[0] for x in self.adapter.calls])
+
     def test_missing_credential_is_business_exception_and_never_harvests(self):
         self.adapter.credential_state="missing"; result=run_harvest_job(self.job,self.adapter); self.assertEqual(result["state"],"business_exception"); self.assertNotIn("harvest",[x[0] for x in self.adapter.calls])
     def test_unavailable_credential_is_retryable_and_never_harvests(self):
