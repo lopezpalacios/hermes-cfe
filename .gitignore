@@ -26,6 +26,9 @@ harvest_results.jsonl
 reg_batch_results*.jsonl
 .f2b_seen.json
 
+# Local CI artifacts
+ci-failed-logs.zip
+
 # Runtime/dependencies/build
 __pycache__/
 *.py[cod]
