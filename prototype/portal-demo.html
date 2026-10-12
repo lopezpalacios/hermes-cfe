@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Contigo Harvest — Demo operations portal</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17291f;
+      --muted: #63746a;
+      --line: #dce5dd;
+      --paper: #fff;
+      --canvas: #f4f7f3;
+      --green: #176b45;
+      --green-dark: #105335;
+      --green-soft: #e8f4ec;
+      --amber: #8a5100;
+      --amber-bg: #fff3d9;
+      --red: #a3382e;
+      --red-bg: #fff0ed;
+      --blue: #315b91;
+      --blue-bg: #edf4ff;
+      --shadow: 0 12px 32px rgb(28 55 38 / 8%);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; color: var(--ink); background: var(--canvas); min-width: 320px; }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible { outline: 3px solid #4b9c70; outline-offset: 3px; }
+    .demo-ribbon { padding: 8px 20px; text-align: center; color: #fff; background: #244c36; font-size: .78rem; letter-spacing: .02em; }
+    .demo-ribbon strong { color: #d7f4df; }
+    .shell { max-width: 1440px; margin: 0 auto; padding: 0 32px 48px; }
+    .topbar { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: 24px; border-bottom: 1px solid var(--line); }
+    .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; min-width: 210px; }
+    .brand-mark { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 12px; color: white; background: var(--green); font-size: 1.2rem; font-weight: 800; }
+    .brand-name { font-weight: 750; letter-spacing: -.025em; }
+    .brand-sub { display: block; color: var(--muted); font-size: .75rem; font-weight: 500; margin-top: 2px; }
+    .nav { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+    .nav button { border: 0; background: transparent; color: var(--muted); padding: 10px 13px; border-radius: 9px; font-size: .88rem; font-weight: 650; }
+    .nav button:hover { color: var(--ink); background: #eaf0ea; }
+    .nav button[aria-current="page"] { color: var(--green-dark); background: var(--green-soft); }
+    .top-actions { display: flex; align-items: center; gap: 12px; }
+    .demo-chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #bfd8c7; background: #f3fbf5; color: var(--green-dark); border-radius: 999px; padding: 7px 10px; font-size: .75rem; font-weight: 750; white-space: nowrap; }
+    .demo-chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #459760; }
+    .avatar { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: #e6e9d9; color: #4c5c3a; font-size: .77rem; font-weight: 750; }
+    main { padding-top: 30px; }
+    .eyebrow { margin: 0 0 7px; color: var(--green); text-transform: uppercase; letter-spacing: .11em; font-size: .71rem; font-weight: 800; }
+    h1 { margin: 0; font-size: clamp(1.75rem, 3vw, 2.3rem); letter-spacing: -.045em; line-height: 1.1; }
+    h2 { margin: 0; font-size: 1.13rem; letter-spacing: -.02em; }
+    h3 { margin: 0; font-size: .96rem; }
+    p { line-height: 1.5; }
+    .page-head { display: flex; justify-content: space-between; align-items: end; gap: 20px; margin-bottom: 23px; }
+    .subhead { max-width: 690px; margin: 9px 0 0; color: var(--muted); font-size: .93rem; }
+    .date-note { color: var(--muted); font-size: .82rem; white-space: nowrap; }
+    .state-strip { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 14px; margin-bottom: 22px; }
+    .state-card { border: 1px solid var(--line); border-radius: 13px; background: var(--paper); padding: 17px 18px; box-shadow: 0 2px 5px rgb(31 60 40 / 2%); }
+    .state-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; color: var(--muted); font-size: .8rem; font-weight: 650; }
+    .state-value { margin: 11px 0 3px; font-size: 1.85rem; font-weight: 760; letter-spacing: -.05em; }
+    .state-note { color: var(--muted); font-size: .77rem; }
+    .state-card.alert { border-color: #f1d4a0; background: linear-gradient(145deg,#fff 25%,#fffbf2); }
+    .state-card.alert .state-value { color: var(--amber); }
+    .state-card.good .state-value { color: var(--green); }
+    .state-card.info .state-value { color: var(--blue); }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #dd9c2c; flex: 0 0 auto; }
+    .status-dot.green { background: #459760; }
+    .status-dot.blue { background: #638bc3; }
+    .section-card { border: 1px solid var(--line); border-radius: 14px; background: var(--paper); box-shadow: 0 2px 6px rgb(31 60 40 / 2%); }
+    .inbox { overflow: hidden; }
+    .inbox-head { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 19px 22px 16px; border-bottom: 1px solid var(--line); }
+    .inbox-title { display: flex; align-items: center; gap: 10px; }
+    .count-pill { display: inline-grid; min-width: 23px; height: 23px; place-items: center; padding: 0 6px; border-radius: 999px; color: var(--amber); background: var(--amber-bg); font-size: .72rem; font-weight: 800; }
+    .inbox-description { color: var(--muted); font-size: .8rem; margin: 5px 0 0; }
+    .toolbar { display: flex; align-items: center; gap: 9px; }
+    .search-wrap { position: relative; }
+    .search-icon { position: absolute; top: 9px; left: 11px; color: #7a8a7e; pointer-events: none; }
+    .search { width: 220px; height: 37px; padding: 0 10px 0 34px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: #fff; font-size: .81rem; }
+    .select { height: 37px; padding: 0 30px 0 10px; border: 1px solid var(--line); border-radius: 8px; color: #43544a; background: #fff; font-size: .8rem; }
+    .button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 1px solid #cbd8ce; border-radius: 8px; padding: 9px 13px; background: #fff; color: #30483a; font-size: .82rem; font-weight: 700; }
+    .button:hover { background: #f5f8f5; border-color: #a7bdae; }
+    .button.primary { color: #fff; border-color: var(--green); background: var(--green); }
+    .button.primary:hover { background: var(--green-dark); }
+    .button:disabled { opacity: .52; cursor: not-allowed; }
+    .exception-list { display: grid; }
+    .exception { display: grid; grid-template-columns: 32px minmax(150px, .8fr) minmax(210px, 1.25fr) minmax(140px, .7fr) auto; align-items: center; gap: 15px; padding: 15px 22px; border-bottom: 1px solid #edf1ed; }
+    .exception:last-child { border-bottom: 0; }
+    .exception:hover { background: #fbfcfb; }
+    .severity-icon { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; font-weight: 800; font-size: .78rem; }
+    .severity-icon.high { color: var(--red); background: var(--red-bg); }
+    .severity-icon.medium { color: var(--amber); background: var(--amber-bg); }
+    .severity-icon.low { color: var(--blue); background: var(--blue-bg); }
+    .rpu-id { color: #223b2c; font-size: .85rem; font-weight: 750; }
+    .rpu-meta { margin-top: 4px; color: var(--muted); font-size: .74rem; }
+    .issue-name { font-size: .84rem; font-weight: 700; }
+    .issue-desc { margin-top: 4px; color: var(--muted); font-size: .77rem; }
+    .exception-status { color: var(--muted); font-size: .77rem; }
+    .exception-status strong { display: block; color: #43564a; font-size: .78rem; margin-bottom: 4px; }
+    .exception-actions { display: flex; align-items: center; gap: 7px; }
+    .small-button { border: 1px solid #d4dfd6; border-radius: 7px; background: white; padding: 7px 9px; color: #395343; font-size: .75rem; font-weight: 700; white-space: nowrap; }
+    .small-button:hover { background: var(--green-soft); }
+    .text-button { border: 0; padding: 5px; background: transparent; color: var(--green); font-weight: 750; font-size: .77rem; white-space: nowrap; }
+    .text-button:hover { text-decoration: underline; }
+    .list-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 22px; border-top: 1px solid var(--line); color: var(--muted); font-size: .76rem; }
+    .lower-grid { display: grid; grid-template-columns: 1.25fr 1fr; gap: 16px; margin-top: 17px; }
+    .lower-card { padding: 18px 20px; }
+    .lower-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 15px; }
+    .state-flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .flow-step { position: relative; padding: 12px 11px; min-height: 82px; border-radius: 10px; background: #f5f8f5; }
+    .flow-step:not(:last-child)::after { content: "→"; position: absolute; top: 26px; right: -11px; z-index: 1; color: #93a399; font-size: .9rem; }
+    .flow-num { font-size: 1.35rem; font-weight: 760; letter-spacing: -.04em; }
+    .flow-label { color: var(--muted); font-size: .72rem; margin-top: 4px; }
+    .activity-list { display: grid; gap: 12px; }
+    .activity { display: grid; grid-template-columns: 25px 1fr auto; gap: 9px; align-items: start; font-size: .78rem; }
+    .activity-mark { width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; color: var(--green); background: var(--green-soft); font-size: .7rem; font-weight: 800; }
+    .activity-text { color: #334b3b; line-height: 1.4; }
+    .activity-time { color: #859188; font-size: .7rem; white-space: nowrap; }
+    .view-panel { min-height: 430px; }
+    .view-card { border: 1px solid var(--line); border-radius: 14px; background: white; padding: 22px; }
+    .view-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin: 17px 0 12px; }
+    .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: white; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: .82rem; }
+    th { color: var(--muted); font-size: .72rem; letter-spacing: .02em; font-weight: 700; background: #f8faf8; }
+    th, td { padding: 13px 15px; border-bottom: 1px solid #edf1ed; white-space: nowrap; }
+    tr:last-child td { border-bottom: 0; }
+    tbody tr:hover { background: #fbfcfb; }
+    .tag { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 5px 8px; font-size: .7rem; font-weight: 750; }
+    .tag.ready { color: #17673e; background: #e8f5eb; }
+    .tag.review { color: #895500; background: #fff3d9; }
+    .tag.paused { color: #a3382e; background: #fff0ed; }
+    .tag.neutral { color: #52635a; background: #edf1ed; }
+    .empty { padding: 34px 18px; text-align: center; color: var(--muted); font-size: .85rem; }
+    .sr-only { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    .toast { position: fixed; left: 50%; bottom: 24px; z-index: 10; transform: translate(-50%, 16px); opacity: 0; pointer-events: none; transition: opacity .18s ease, transform .18s ease; border-radius: 10px; padding: 12px 16px; color: white; background: #203c2b; box-shadow: var(--shadow); font-size: .85rem; }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    dialog { width: min(650px, calc(100vw - 32px)); max-height: min(85vh, 800px); padding: 0; border: 1px solid var(--line); border-radius: 16px; color: var(--ink); box-shadow: 0 24px 80px rgb(13 35 21 / 25%); }
+    dialog::backdrop { background: rgb(18 35 24 / 48%); backdrop-filter: blur(2px); }
+    .dialog-head { display: flex; justify-content: space-between; gap: 14px; align-items: flex-start; padding: 21px 23px 16px; border-bottom: 1px solid var(--line); }
+    .dialog-body { padding: 18px 23px 22px; }
+    .icon-button { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 9px; background: white; color: var(--muted); font-size: 1.1rem; }
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; margin: 16px 0; }
+    .detail-cell { padding: 12px; border-radius: 9px; background: #f6f8f6; }
+    .detail-label { color: var(--muted); font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; font-weight: 750; }
+    .detail-value { margin-top: 5px; font-size: .83rem; font-weight: 650; }
+    .timeline { margin: 16px 0 0 7px; padding: 0 0 0 17px; border-left: 2px solid #dce8de; list-style: none; }
+    .timeline li { position: relative; padding: 0 0 17px 4px; color: #405348; font-size: .8rem; }
+    .timeline li::before { content: ""; position: absolute; left: -24px; top: 4px; width: 10px; height: 10px; border: 2px solid #fff; border-radius: 50%; background: #438b5c; box-shadow: 0 0 0 1px #438b5c; }
+    .timeline time { display: block; margin-bottom: 4px; color: #718176; font-size: .71rem; }
+    .dialog-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 19px; }
+    .notice { padding: 12px 14px; border-left: 3px solid #61906b; border-radius: 5px; background: #f1f7f1; color: #415949; font-size: .78rem; }
+    @media (max-width: 960px) {
+      .shell { padding-right: 22px; padding-left: 22px; }
+      .topbar { flex-wrap: wrap; padding: 14px 0; }
+      .nav { order: 3; flex-basis: 100%; overflow-x: auto; flex-wrap: nowrap; }
+      .nav button { white-space: nowrap; }
+      .exception { grid-template-columns: 32px minmax(130px, .9fr) minmax(180px, 1.2fr) auto; }
+      .exception-status { display: none; }
+    }
+    @media (max-width: 680px) {
+      .shell { padding: 0 14px 32px; }
+      .demo-ribbon { padding: 8px 12px; font-size: .71rem; }
+      .topbar { min-height: 0; gap: 10px; }
+      .brand { min-width: 0; }
+      .top-actions { margin-left: auto; }
+      .demo-chip { font-size: .68rem; padding: 6px 8px; }
+      .avatar { display: none; }
+      main { padding-top: 23px; }
+      .page-head { align-items: flex-start; flex-direction: column; gap: 7px; }
+      .date-note { white-space: normal; }
+      .state-strip { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 9px; }
+      .state-card { padding: 13px; }
+      .state-value { font-size: 1.55rem; }
+      .inbox-head { align-items: flex-start; flex-direction: column; padding: 16px; }
+      .toolbar { width: 100%; }
+      .search-wrap { flex: 1; }
+      .search { width: 100%; }
+      .select { max-width: 44%; }
+      .exception { grid-template-columns: 28px 1fr auto; gap: 10px; padding: 14px 13px; }
+      .exception .issue { grid-column: 2 / 4; grid-row: 2; }
+      .exception .rpu { grid-column: 2; grid-row: 1; }
+      .exception-actions { grid-column: 3; grid-row: 1; }
+      .severity-icon { grid-column: 1; grid-row: 1; width: 27px; height: 27px; }
+      .small-button { padding: 6px 7px; font-size: .7rem; }
+      .text-button { font-size: .7rem; }
+      .list-foot { padding: 12px 14px; }
+      .lower-grid { grid-template-columns: 1fr; }
+      .state-flow { gap: 5px; }
+      .flow-step { padding: 10px 7px; min-height: 76px; }
+      .flow-step:not(:last-child)::after { right: -8px; }
+      .flow-label { font-size: .66rem; }
+      .view-card { padding: 16px; }
+      .view-toolbar { align-items: flex-start; flex-direction: column; }
+      .detail-grid { grid-template-columns: 1fr 1fr; }
+      .dialog-head { padding: 17px; }
+      .dialog-body { padding: 15px 17px 18px; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <div class="demo-ribbon"><strong>DEMO ENVIRONMENT</strong> · All records, dates and statuses on this page are synthetic. No live CFE backend is connected.</div>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="#operate" aria-label="Contigo Harvest demo home">
+        <span class="brand-mark" aria-hidden="true">C</span>
+        <span><span class="brand-name">Contigo Harvest</span><span class="brand-sub">CFE operations portal</span></span>
+      </a>
+      <nav class="nav" aria-label="Primary navigation">
+        <button type="button" data-view="operate" aria-current="page">Operate</button>
+        <button type="button" data-view="exceptions">Exceptions <span class="sr-only">inbox</span></button>
+        <button type="button" data-view="rpus">RPUs</button>
+        <button type="button" data-view="runs">Harvest runs</button>
+        <button type="button" data-view="policies">Policies</button>
+      </nav>
+      <div class="top-actions"><span class="demo-chip">Synthetic demo</span><span class="avatar" aria-label="Demo operator">DO</span></div>
+    </header>
+    <main id="main-content" tabindex="-1" aria-live="off"></main>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <dialog id="detail-dialog" aria-labelledby="detail-title">
+    <div class="dialog-head">
+      <div><p class="eyebrow">Synthetic RPU record · demo only</p><h2 id="detail-title">Record details</h2></div>
+      <button class="icon-button" type="button" data-close-dialog aria-label="Close record details">×</button>
+    </div>
+    <div class="dialog-body" id="detail-body"></div>
+  </dialog>
+
+  <script>
+    "use strict";
+    const records = [
+      { id: "RPU-004821", name: "María L. Hernández", area: "Guadalajara · JAL", status: "Needs attention", severity: "High", issue: "Address validation mismatch", note: "Street number differs between submitted form and simulated CFE record.", updated: "Today, 09:42", run: "RUN-DEMO-0318", meter: "DEMO-••4821", stage: "Validation", timeline: [["Today · 09:42", "Address check flagged a mismatch in the synthetic source record."], ["Today · 09:40", "Demo harvest run RUN-DEMO-0318 processed this record."], ["Yesterday · 16:18", "Record added to the demo queue for review."]] },
+      { id: "RPU-004796", name: "Jorge A. Ruiz", area: "Zapopan · JAL", status: "Needs attention", severity: "Medium", issue: "Consent confirmation required", note: "A simulated consent step needs operator review before the next harvest attempt.", updated: "Today, 09:18", run: "RUN-DEMO-0318", meter: "DEMO-••4796", stage: "Consent review", timeline: [["Today · 09:18", "Consent confirmation requested in the synthetic workflow."], ["Today · 09:12", "Demo harvest run RUN-DEMO-0318 paused at consent review."], ["Mon · 14:03", "Demo record staged for processing."]] },
+      { id: "RPU-004755", name: "Elena P. Torres", area: "Tlaquepaque · JAL", status: "Needs attention", severity: "Medium", issue: "Temporary source unavailable", note: "The demo source returned a retryable response; no data was fetched from CFE.", updated: "Today, 08:56", run: "RUN-DEMO-0317", meter: "DEMO-••4755", stage: "Retry queued", timeline: [["Today · 08:56", "Synthetic source response marked retryable."], ["Today · 08:55", "Demo retry scheduled; operator action is optional."], ["Yesterday · 11:31", "Record passed local pre-checks."]] },
+      { id: "RPU-004701", name: "Carlos M. Navarro", area: "Tonalá · JAL", status: "Needs attention", severity: "Low", issue: "Document review pending", note: "A demo attachment is waiting for a manual review decision.", updated: "Yesterday, 17:24", run: "RUN-DEMO-0316", meter: "DEMO-••4701", stage: "Manual review", timeline: [["Yesterday · 17:24", "Manual review reminder created for this synthetic record."], ["Yesterday · 17:22", "Demo attachment added to the review queue."], ["Tue · 10:05", "Record entered the demo workflow."]] },
+      { id: "RPU-004662", name: "Ana P. Soto", area: "Guadalajara · JAL", status: "Ready", severity: "—", issue: "Harvest completed", note: "The synthetic record reached the demo-ready state.", updated: "Today, 08:12", run: "RUN-DEMO-0317", meter: "DEMO-••4662", stage: "Ready", timeline: [["Today · 08:12", "Demo record moved to Ready after simulated validation."], ["Today · 08:10", "Synthetic harvest run completed without a demo exception."], ["Mon · 09:10", "Record staged in the demo queue."]] },
+      { id: "RPU-004618", name: "Luis F. Gómez", area: "Zapopan · JAL", status: "Paused", severity: "—", issue: "Paused by operator", note: "This synthetic record is paused in the local demo state.", updated: "Yesterday, 15:30", run: "RUN-DEMO-0315", meter: "DEMO-••4618", stage: "Paused", timeline: [["Yesterday · 15:30", "Demo record paused by operator."], ["Tue · 13:22", "Synthetic consent check completed."], ["Tue · 13:19", "Record added to demo queue."]] },
+      { id: "RPU-004590", name: "Sofía R. Vega", area: "Tonalá · JAL", status: "Ready", severity: "—", issue: "Harvest completed", note: "The synthetic record reached the demo-ready state.", updated: "Mon · 16:40", run: "RUN-DEMO-0314", meter: "DEMO-••4590", stage: "Ready", timeline: [["Mon · 16:40", "Demo record moved to Ready after simulated validation."], ["Mon · 16:39", "Synthetic harvest run completed."], ["Mon · 16:01", "Record staged in the demo queue."]] }
+    ];
+    const runs = [
+      { id: "RUN-DEMO-0318", started: "Today · 09:40", scope: "Demo cohort · 12 RPUs", result: "8 ready · 3 review · 1 retry", state: "Completed" },
+      { id: "RUN-DEMO-0317", started: "Today · 08:50", scope: "Demo cohort · 9 RPUs", result: "7 ready · 1 review · 1 retry", state: "Completed" },
+      { id: "RUN-DEMO-0316", started: "Yesterday · 16:55", scope: "Demo cohort · 14 RPUs", result: "10 ready · 3 review · 1 paused", state: "Completed" },
+      { id: "RUN-DEMO-0315", started: "Yesterday · 14:20", scope: "Demo cohort · 6 RPUs", result: "4 ready · 1 review · 1 paused", state: "Completed" }
+    ];
+    const main = document.querySelector("#main-content");
+    const toast = document.querySelector("#toast");
+    const dialog = document.querySelector("#detail-dialog");
+    let activeView = "operate";
+    let activeFilter = "all";
+    let searchQuery = "";
+    let toastTimer;
+    const exceptionRecords = () => records.filter(record => record.status === "Needs attention");
+    const escapeHTML = value => String(value).replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
+    const severityClass = severity => severity === "High" ? "high" : severity === "Medium" ? "medium" : "low";
+    const statusTag = status => {
+      const cls = status === "Ready" ? "ready" : status === "Paused" ? "paused" : status === "Needs attention" ? "review" : "neutral";
+      return `<span class="tag ${cls}">${escapeHTML(status)}</span>`;
+    };
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove("show"), 2800);
+    }
+    function exceptionRow(record, compact = false) {
+      return `<article class="exception" aria-label="${escapeHTML(record.id)}: ${escapeHTML(record.issue)}">
+        <span class="severity-icon ${severityClass(record.severity)}" aria-label="${escapeHTML(record.severity)} severity">${record.severity === "High" ? "!" : record.severity === "Medium" ? "•" : "i"}</span>
+        <div class="rpu"><div class="rpu-id">${escapeHTML(record.id)}</div><div class="rpu-meta">${escapeHTML(record.name)} · ${escapeHTML(record.area)}</div></div>
+        <div class="issue"><div class="issue-name">${escapeHTML(record.issue)}</div><div class="issue-desc">${escapeHTML(record.note)}</div></div>
+        <div class="exception-status"><strong>${escapeHTML(record.stage)}</strong>${escapeHTML(record.updated)}</div>
+        <div class="exception-actions"><button class="text-button" type="button" data-detail="${escapeHTML(record.id)}">Details<span class="sr-only"> for ${escapeHTML(record.id)}</span></button>${compact ? "" : `<button class="small-button" type="button" data-action="resolve" data-id="${escapeHTML(record.id)}">Mark reviewed</button>`}</div>
+      </article>`;
+    }
+    function filteredExceptions() {
+      const needle = searchQuery.trim().toLowerCase();
+      return exceptionRecords().filter(record => (activeFilter === "all" || record.severity.toLowerCase() === activeFilter) && (!needle || [record.id, record.name, record.area, record.issue, record.stage].join(" ").toLowerCase().includes(needle)));
+    }
+    function inboxMarkup(compact = false) {
+      const found = filteredExceptions();
+      return `<section class="section-card inbox" aria-labelledby="inbox-heading">
+        <div class="inbox-head"><div><div class="inbox-title"><h2 id="inbox-heading">Exceptions to review</h2><span class="count-pill" aria-label="${found.length} exceptions">${found.length}</span></div><p class="inbox-description">Prioritized operator work, not a live CFE status feed.</p></div>
+          <div class="toolbar"><label class="search-wrap"><span class="search-icon" aria-hidden="true">⌕</span><span class="sr-only">Search exceptions</span><input class="search" type="search" value="${escapeHTML(searchQuery)}" placeholder="Search RPU or issue" data-search></label>
+            <label><span class="sr-only">Filter by severity</span><select class="select" data-filter><option value="all" ${activeFilter === "all" ? "selected" : ""}>All severity</option><option value="high" ${activeFilter === "high" ? "selected" : ""}>High</option><option value="medium" ${activeFilter === "medium" ? "selected" : ""}>Medium</option><option value="low" ${activeFilter === "low" ? "selected" : ""}>Low</option></select></label>
+          </div>
+        </div>
+        <div class="exception-list" id="exception-list">${found.length ? found.map(record => exceptionRow(record, compact)).join("") : `<div class="empty">No synthetic exceptions match this search or filter.</div>`}</div>
+        <div class="list-foot"><span>Showing ${found.length} of ${exceptionRecords().length} demo exceptions</span><span>All times are illustrative</span></div>
+      </section>`;
+    }
+    function operateView() {
+      const attention = exceptionRecords().length;
+      const ready = records.filter(record => record.status === "Ready").length;
+      const paused = records.filter(record => record.status === "Paused").length;
+      const validating = records.filter(record => ["Validation", "Consent review", "Retry queued", "Manual review"].includes(record.stage)).length;
+      return `<section class="page-head"><div><p class="eyebrow">Operate · synthetic demo workspace</p><h1>Harvest operations</h1><p class="subhead">A focused view of the demo queue: current workflow state, exceptions that need a person, and recent local activity.</p></div><div class="date-note">Illustrative activity · not connected to CFE</div></section>
+        <section class="state-strip" aria-label="Synthetic queue state">
+          <article class="state-card alert"><div class="state-head"><span>Needs review</span><span class="status-dot" aria-hidden="true"></span></div><div class="state-value">${attention}</div><div class="state-note">Synthetic exceptions in the inbox</div></article>
+          <article class="state-card good"><div class="state-head"><span>Ready</span><span class="status-dot green" aria-hidden="true"></span></div><div class="state-value">${ready}</div><div class="state-note">Demo records past validation</div></article>
+          <article class="state-card"><div class="state-head"><span>In demo queue</span><span class="status-dot blue" aria-hidden="true"></span></div><div class="state-value">${records.length}</div><div class="state-note">Illustrative RPUs, all synthetic</div></article>
+          <article class="state-card info"><div class="state-head"><span>Paused</span><span class="status-dot blue" aria-hidden="true"></span></div><div class="state-value">${paused}</div><div class="state-note">Local demo state only</div></article>
+        </section>
+        ${inboxMarkup()}
+        <div class="lower-grid"><section class="section-card lower-card" aria-labelledby="flow-title"><div class="lower-card-head"><h2 id="flow-title">Harvest state path</h2><span class="demo-chip">Demo model</span></div><div class="state-flow"><div class="flow-step"><div class="flow-num">${records.length}</div><div class="flow-label">Queued</div></div><div class="flow-step"><div class="flow-num">${validating}</div><div class="flow-label">In progress</div></div><div class="flow-step"><div class="flow-num">${attention}</div><div class="flow-label">Needs operator</div></div><div class="flow-step"><div class="flow-num">${ready}</div><div class="flow-label">Ready</div></div></div></section>
+          <section class="section-card lower-card" aria-labelledby="activity-title"><div class="lower-card-head"><h2 id="activity-title">Recent demo activity</h2><button class="text-button" type="button" data-view-link="runs">View runs</button></div><div class="activity-list"><div class="activity"><span class="activity-mark" aria-hidden="true">✓</span><span class="activity-text">RUN-DEMO-0318 completed its simulated pass; 3 records need review.</span><time class="activity-time">09:42</time></div><div class="activity"><span class="activity-mark" aria-hidden="true">↻</span><span class="activity-text">One record entered the illustrative retry queue.</span><time class="activity-time">08:56</time></div><div class="activity"><span class="activity-mark" aria-hidden="true">＋</span><span class="activity-text">A synthetic consent review was added to the inbox.</span><time class="activity-time">08:18</time></div></div></section></div>`;
+    }
+    function exceptionsView() {
+      return `<section class="page-head"><div><p class="eyebrow">Operate · exception inbox</p><h1>Exceptions</h1><p class="subhead">Review the synthetic records that cannot move forward without attention. Open a record for its details and event timeline.</p></div><div class="date-note">${exceptionRecords().length} demo items · no backend actions</div></section>${inboxMarkup()}`;
+    }
+    function rpusView() {
+      const rows = records.map(record => `<tr><td><strong>${escapeHTML(record.id)}</strong></td><td>${escapeHTML(record.name)}</td><td>${escapeHTML(record.area)}</td><td>${statusTag(record.status)}</td><td>${escapeHTML(record.stage)}</td><td><button class="text-button" type="button" data-detail="${escapeHTML(record.id)}">Open details<span class="sr-only"> for ${escapeHTML(record.id)}</span></button></td></tr>`).join("");
+      return `<section class="page-head"><div><p class="eyebrow">Operate · demo records</p><h1>RPU queue</h1><p class="subhead">Synthetic record inventory with explicit workflow states. Identifiers and details are fabricated for this prototype.</p></div><div class="date-note">${records.length} illustrative records</div></section><section class="view-card"><div class="view-toolbar"><h2>All demo RPUs</h2><span class="demo-chip">Synthetic data</span></div><div class="table-wrap"><table><caption class="sr-only">Synthetic RPU records and demo workflow states</caption><thead><tr><th scope="col">Demo RPU ID</th><th scope="col">Name</th><th scope="col">Area</th><th scope="col">Workflow state</th><th scope="col">Current stage</th><th scope="col">Record</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+    }
+    function runsView() {
+      const rows = runs.map(run => `<tr><td><strong>${escapeHTML(run.id)}</strong></td><td>${escapeHTML(run.started)}</td><td>${escapeHTML(run.scope)}</td><td>${escapeHTML(run.result)}</td><td>${statusTag(run.state)}</td></tr>`).join("");
+      return `<section class="page-head"><div><p class="eyebrow">Operate · run history</p><h1>Harvest runs</h1><p class="subhead">Illustrative run summaries to show how a local harvest workflow could be inspected; they are not execution logs.</p></div><div class="date-note">Simulated run data only</div></section><section class="view-card"><div class="view-toolbar"><h2>Recent demo runs</h2><span class="demo-chip">Not live executions</span></div><div class="table-wrap"><table><caption class="sr-only">Synthetic harvest run summaries</caption><thead><tr><th scope="col">Demo run ID</th><th scope="col">Started</th><th scope="col">Scope</th><th scope="col">Illustrative outcome</th><th scope="col">State</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+    }
+    function policiesView() {
+      return `<section class="page-head"><div><p class="eyebrow">Operate · guardrails</p><h1>Policies</h1><p class="subhead">A read-only presentation of example guardrails for the demo. No real policy is configured or applied from this page.</p></div><div class="date-note">Illustrative, read-only</div></section><section class="view-card"><div class="view-toolbar"><h2>Example operating guardrails</h2><span class="demo-chip">Not configured</span></div><div class="table-wrap"><table><caption class="sr-only">Illustrative read-only workflow guardrails</caption><thead><tr><th scope="col">Guardrail</th><th scope="col">Example behavior</th><th scope="col">Demo setting</th></tr></thead><tbody><tr><td><strong>Human review</strong></td><td>Pause for operator review when address validation differs.</td><td>${statusTag("Enabled in demo")}</td></tr><tr><td><strong>Retry handling</strong></td><td>Keep temporary source errors distinct from permanent failures.</td><td>${statusTag("Enabled in demo")}</td></tr><tr><td><strong>Consent checkpoint</strong></td><td>Require a consent confirmation step before the next simulated action.</td><td>${statusTag("Enabled in demo")}</td></tr></tbody></table></div><p class="notice" style="margin:16px 0 0">These descriptions are prototype examples only. No CFE endpoint, credentials, or production data are used.</p></section>`;
+    }
+    const views = { operate: operateView, exceptions: exceptionsView, rpus: rpusView, runs: runsView, policies: policiesView };
+    function render(view = activeView) {
+      activeView = view;
+      document.querySelectorAll(".nav [data-view]").forEach(button => {
+        if (button.dataset.view === view) button.setAttribute("aria-current", "page");
+        else button.removeAttribute("aria-current");
+      });
+      main.innerHTML = views[view]();
+      main.focus({ preventScroll: true });
+    }
+    function openDetails(id) {
+      const record = records.find(item => item.id === id);
+      if (!record) return;
+      document.querySelector("#detail-title").textContent = `${record.id} · ${record.issue}`;
+      document.querySelector("#detail-body").innerHTML = `<p>${escapeHTML(record.note)}</p><div class="detail-grid"><div class="detail-cell"><div class="detail-label">Synthetic status</div><div class="detail-value">${statusTag(record.status)}</div></div><div class="detail-cell"><div class="detail-label">Current stage</div><div class="detail-value">${escapeHTML(record.stage)}</div></div><div class="detail-cell"><div class="detail-label">Demo run</div><div class="detail-value">${escapeHTML(record.run)}</div></div><div class="detail-cell"><div class="detail-label">Illustrative meter ref</div><div class="detail-value">${escapeHTML(record.meter)}</div></div></div><h3>Record timeline</h3><ol class="timeline">${record.timeline.map(([time, event]) => `<li><time>${escapeHTML(time)} · illustrative</time>${escapeHTML(event)}</li>`).join("")}</ol><p class="notice">Synthetic record detail. This is not a live CFE account or backend history.</p><div class="dialog-actions"><button class="button" type="button" data-close-dialog>Close</button>${record.status === "Needs attention" ? `<button class="button primary" type="button" data-dialog-resolve="${escapeHTML(record.id)}">Mark reviewed</button>` : ""}</div>`;
+      dialog.showModal();
+    }
+    function markReviewed(id) {
+      const record = records.find(item => item.id === id);
+      if (!record || record.status !== "Needs attention") return;
+      record.status = "Ready";
+      record.stage = "Reviewed (demo)";
+      record.updated = "Just now · local demo";
+      if (dialog.open) dialog.close();
+      render(activeView);
+      showToast(`${id} marked reviewed in this local demo only.`);
+    }
+    document.addEventListener("click", event => {
+      const navButton = event.target.closest("[data-view]");
+      if (navButton) { activeFilter = "all"; searchQuery = ""; render(navButton.dataset.view); return; }
+      const viewLink = event.target.closest("[data-view-link]");
+      if (viewLink) { activeFilter = "all"; searchQuery = ""; render(viewLink.dataset.viewLink); return; }
+      const detailButton = event.target.closest("[data-detail]");
+      if (detailButton) { openDetails(detailButton.dataset.detail); return; }
+      const resolveButton = event.target.closest("[data-action='resolve']");
+      if (resolveButton) { markReviewed(resolveButton.dataset.id); return; }
+      const dialogResolve = event.target.closest("[data-dialog-resolve]");
+      if (dialogResolve) { markReviewed(dialogResolve.dataset.dialogResolve); return; }
+      if (event.target.closest("[data-close-dialog]")) dialog.close();
+    });
+    document.addEventListener("input", event => {
+      if (event.target.matches("[data-search]")) { searchQuery = event.target.value; render(activeView); const field = main.querySelector("[data-search]"); if (field) { field.focus(); field.setSelectionRange(searchQuery.length, searchQuery.length); } }
+    });
+    document.addEventListener("change", event => {
+      if (event.target.matches("[data-filter]")) { activeFilter = event.target.value; render(activeView); }
+    });
+    dialog.addEventListener("click", event => { if (event.target === dialog) dialog.close(); });
+    document.querySelector(".brand").addEventListener("click", event => { event.preventDefault(); activeFilter = "all"; searchQuery = ""; render("operate"); });
+    render("operate");
+  </script>
+</body>
+</html>

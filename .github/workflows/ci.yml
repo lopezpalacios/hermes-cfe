@@ -1,0 +1,36 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deterministic:
+    name: deterministic evals and Mermaid validation
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify deterministic tests exist
+        run: |
+          if ! find tests -type f -name 'test_*.py' -print -quit | grep -q .; then
+            echo 'No deterministic test files found under tests/' >&2
+            exit 1
+          fi
+      - name: Deterministic evals
+        run: python -m unittest discover -s tests -v
+      - name: Validate Mermaid source fences and diagrams
+        run: python scripts/check_mermaid.py
+      - name: Verify no secret-bearing files are tracked
+        run: |
+          if git ls-files | grep -E '(^|/)(\.env($|\.)|\.persist_conf\.json$|.*credentials.*\.(json|enc)$|.*\.(pdf|xml|eml)$|node_modules/)'; then
+            echo 'Sensitive or generated files are tracked' >&2
+            exit 1
+          fi
